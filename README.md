@@ -1,4 +1,3 @@
-
 # ClinShift
 
 Robustness and calibration of clinical prediction models under
@@ -26,8 +25,6 @@ the shared feature set, are documented in `docs/decisions.md`.
 
 ## Repository structure
 
-```
-
 ClinShift/
 ├── .github/workflows/    CI and experiment runs
 ├── docs/                 Design decisions
@@ -35,10 +32,12 @@ ClinShift/
 ├── scripts/              Utilities and figure generation
 ├── src/                  Core implementation
 ├── tests/                Unit tests
-├── results/              Metrics, figures, and ablation tables
+├── results/              Metrics, figures, and result documentation
 └── requirements.txt
 
-```
+
+Each subdirectory under `results/` contains a README that describes the
+files it holds.
 
 ## Running the pipeline
 
@@ -46,15 +45,13 @@ Each experiment is a standalone module under `experiments/`. The
 GitHub Actions workflow runs the sequence on every push to `main` and
 commits the resulting files back to `results/`.
 
-```
-
 python -m experiments.run_baseline
 python -m experiments.run_transfer
 python -m experiments.run_shift_analysis
+python -m experiments.run_concept_shift
 python -m experiments.run_detection_analysis
 python -m scripts.make_figures
 
-```
 
 ## Main findings
 
@@ -92,6 +89,37 @@ replication on datasets with more sites would be required before these
 indicators could be used as a deployment-time check.
 
 ![Entropy shift vs. calibration degradation](results/figures/entropy_vs_delta_ece.png)
+
+**Concept divergence accompanies calibration degradation.**
+
+Coefficient vectors of logistic regression models fitted
+independently at each site on a shared feature space have pairwise
+Euclidean distances between 1.78 and 2.47. The mean absolute
+difference between the predictions of these models on the Cleveland
+evaluation set ranges from 0.11 to 0.37. The two measures agree on
+which pairs of sites are most divergent.
+
+| Pair                     | Coefficient distance | Prediction divergence |
+|--------------------------|----------------------|-----------------------|
+| Cleveland – Hungary      | 2.385                | 0.113                 |
+| Cleveland – Switzerland  | 2.465                | 0.368                 |
+| Cleveland – VA           | 1.972                | 0.159                 |
+| Hungary – Switzerland    | 2.343                | 0.372                 |
+| Hungary – VA             | 1.780                | 0.140                 |
+| Switzerland – VA         | 2.248                | 0.305                 |
+
+Switzerland appears in all three of the largest pairwise distances in
+both measures. The sign of the coefficient for sex reverses at
+Switzerland relative to the other three sites. This reversal is
+consistent with the site's positive rate of 93.5%, which changes the
+interpretation of sex as a predictor in the sample.
+
+For the three pairs of the form (Cleveland, target), prediction
+divergence aligns with the change in ECE observed in the transfer
+experiments: Hungary has the smallest divergence and the smallest
+change in calibration, Switzerland has the largest of both, and VA
+falls in between. These measures are descriptive and do not isolate
+concept shift from other sources of variation.
 
 **Site-level data quality affects the interpretation of transfer.**
 
@@ -149,11 +177,6 @@ differences in patient populations, data collection practices, or
 measurement conventions across sites. The current analysis does not
 distinguish among these explanations.
 
-Calibration follows a different pattern. In Switzerland, both
-discrimination and calibration change in opposite directions, and the
-divergence between the two metrics is the central observation of the
-study.
-
 ## Unlabeled shift indicators
 
 | Indicator               | Hungary | Switzerland | VA    |
@@ -188,8 +211,9 @@ transfer effect may reflect intrinsic site difficulty rather than
 distribution shift between populations. The current analysis does not
 separate these two contributions.
 
-The distinction between covariate shift and concept shift is treated
-descriptively. Neither is identified causally.
+The distinction between covariate shift, concept shift, and data
+quality artifacts is treated descriptively. None is identified
+causally.
 
 Post-hoc calibration is fitted on source data. Its behavior under
 target shift is one of the phenomena under study rather than a solved
@@ -215,4 +239,3 @@ require access to the raw dataset.
 ## License
 
 MIT
-```

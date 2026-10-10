@@ -31,7 +31,9 @@ not exclude the site from analysis.
 Cholesterol is therefore excluded from `SHARED_FEATURES` and from the
 main cross-site comparison. The raw column is retained in the loaded
 data frame so that the effect of this decision can be examined in a
-later sensitivity analysis.
+later sensitivity analysis. The comparison between the run that
+included cholesterol and the run that excludes it is reported in
+`results/ablation_chol.json`.
 
 ## Baseline versus transfer performance
 
@@ -44,10 +46,10 @@ missingness above 25% in several features.
 
 Cross-site transfer from Cleveland does not uniformly reduce AUROC. In
 Switzerland and VA, the transferred model achieves higher AUROC than a
-model trained on the target site alone. This reversal is consistent
-with the lower intrinsic quality of these two sites: a model trained
-on the cleaner Cleveland data generalizes better than a model
-overfitting to noisier target data.
+model trained on the target site alone. This pattern may reflect
+differences in patient populations, data collection practices, or
+measurement conventions across sites. The current analysis does not
+distinguish among these explanations.
 
 Calibration does not follow the same pattern. In Switzerland, the
 transferred model's ECE rises from 0.06 to 0.29 while AUROC rises by
@@ -85,11 +87,12 @@ mean predicted probability, and the difference in mean predictive
 entropy.
 
 The feature-based indicators reached a Spearman correlation of 0.5
-with the change in ECE. The prediction-based indicators reached a
-Spearman correlation of 1.0 with the same quantity. The difference is
-consistent with what each class measures: prediction-based indicators
-are computed from the model output and are therefore more directly
-related to calibration.
+with the change in ECE. Two prediction-based indicators, the
+difference in mean predicted probability and the difference in mean
+predictive entropy, reached a Spearman correlation of 1.0. The
+difference is consistent with what each class measures: prediction-
+based indicators are computed from the model output and are therefore
+more directly related to calibration.
 
 With three target sites, a Spearman correlation of 1.0 has a
 non-negligible probability of arising by chance under the null
@@ -138,6 +141,28 @@ separate concept shift from covariate shift. With three target sites,
 no inferential claim is made. The measures are reported alongside the
 covariate shift analysis so that the two views can be read together.
 
+## Stability across seeds
 
+The primary results use seed 42. A sensitivity analysis with five
+seeds (0 through 4) is reported in the project README. It shows that
+the calibration findings are stable across seeds, while the
+discrimination findings for the Switzerland target are not.
 
+For logistic regression, the Expected Calibration Error on the
+Switzerland transfer target is 0.073 ± 0.007 at baseline and
+0.289 ± 0.028 under transfer, with the increase present in every seed.
+The corresponding AUROC values are 0.759 ± 0.052 at baseline and
+0.755 ± 0.020 under transfer. These two intervals overlap, so the
+change in discrimination observed at seed 42 does not persist when
+averaged over multiple seeds.
 
+The reduction of AUROC produced by isotonic calibration is present in
+every seed for every target site, which strengthens the earlier
+finding that this method behaves poorly under distribution shift.
+
+The Switzerland site shows the largest standard deviation across seeds
+in both baseline and transfer, consistent with its smaller sample size
+and its distinct positive rate.
+
+The comparison is descriptive. With five seeds and three target sites,
+no inferential claim is made.

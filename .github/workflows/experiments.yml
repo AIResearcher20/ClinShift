@@ -44,6 +44,9 @@ jobs:
       - name: Run shift detection analysis
         run: python -m experiments.run_detection_analysis
 
+      - name: Generate figures
+        run: python -m scripts.make_figures
+
       - name: Upload results as artifact
         uses: actions/upload-artifact@v4
         with:

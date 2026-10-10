@@ -1,3 +1,4 @@
+چ```markdown
 # ClinShift
 
 Robustness and calibration of clinical prediction models under
@@ -25,6 +26,8 @@ the shared feature set, are documented in `docs/decisions.md`.
 
 ## Repository structure
 
+```
+
 ClinShift/
 ├── .github/workflows/    CI and experiment runs
 ├── docs/                 Design decisions
@@ -35,6 +38,7 @@ ClinShift/
 ├── results/              Metrics, figures, and result documentation
 └── requirements.txt
 
+```
 
 Each subdirectory under `results/` contains a README that describes the
 files it holds.
@@ -45,13 +49,17 @@ Each experiment is a standalone module under `experiments/`. The
 GitHub Actions workflow runs the sequence on every push to `main` and
 commits the resulting files back to `results/`.
 
+```
+
 python -m experiments.run_baseline
 python -m experiments.run_transfer
 python -m experiments.run_shift_analysis
 python -m experiments.run_concept_shift
 python -m experiments.run_detection_analysis
+python -m experiments.run_seed_sensitivity
 python -m scripts.make_figures
 
+```
 
 ## Main findings
 
@@ -151,6 +159,43 @@ heart rate, which appears in all three transfer targets.
 
 ![Feature-level covariate shift by target site](results/figures/feature_shift.png)
 
+### Stability across seeds
+
+The results above use a single random seed. Repeating the
+cross-validation and the transfer experiment with five seeds (0
+through 4) shows that the change in calibration is stable, while the
+change in discrimination is not.
+
+For logistic regression, the Expected Calibration Error on the
+Switzerland transfer target is 0.073 ± 0.007 at baseline and
+0.289 ± 0.028 under transfer. The increase is present in every seed.
+The corresponding AUROC values are 0.759 ± 0.052 at baseline and
+0.755 ± 0.020 under transfer. These two intervals overlap, so the
+difference is not distinguishable from sampling variation.
+
+The seed-42 run, which is reported in the sections above, showed an
+increase in AUROC of 0.045 at Switzerland. This increase does not
+persist when averaged over multiple seeds. The calibration result,
+however, does.
+
+Two further observations are consistent across seeds. The reduction of
+AUROC produced by isotonic calibration is present in every seed for
+every target site. The Switzerland site shows the largest standard
+deviation across seeds in both baseline and transfer, which is
+consistent with its smaller sample size and its distinct positive
+rate.
+
+| Target      | AUROC (five seeds) | ECE (five seeds) |
+|-------------|--------------------|------------------|
+| Hungary     | 0.882 ± 0.007      | 0.057 ± 0.025    |
+| Switzerland | 0.755 ± 0.020      | 0.289 ± 0.028    |
+| VA          | 0.725 ± 0.011      | 0.141 ± 0.025    |
+
+Values are reported as mean ± standard deviation across seeds 0
+through 4. The metrics correspond to the raw predictions of a
+logistic regression trained on Cleveland, following the same protocol
+as the transfer experiment.
+
 ## Results summary
 
 Within-site cross-validation with logistic regression:
@@ -205,6 +250,11 @@ The dataset contains four sites, of which three are used as transfer
 targets. Correlation estimates over three points are exploratory and
 should not be used for inference.
 
+The main results use a single random seed. A sensitivity analysis with
+five seeds is reported in the previous section. It shows that the
+calibration findings are stable across seeds, while the discrimination
+findings for the Switzerland target are not.
+
 The Switzerland and VA sites differ from Cleveland and Hungary in
 positive rate and in the amount of missing data. Part of the observed
 transfer effect may reflect intrinsic site difficulty rather than
@@ -239,3 +289,6 @@ require access to the raw dataset.
 ## License
 
 MIT
+```
+
+-

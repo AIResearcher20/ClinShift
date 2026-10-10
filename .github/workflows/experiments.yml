@@ -47,6 +47,9 @@ jobs:
       - name: Run shift detection analysis
         run: python -m experiments.run_detection_analysis
 
+      - name: Run seed sensitivity
+        run: python -m experiments.run_seed_sensitivity
+
       - name: Generate figures
         run: python -m scripts.make_figures
 

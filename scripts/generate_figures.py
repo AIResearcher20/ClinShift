@@ -20,7 +20,13 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_json(name: str) -> dict:
-    with open(RESULTS_DIR / name) as handle:
+    path = RESULTS_DIR / name
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Missing {path}. Run the experiment scripts before "
+            f"generating figures."
+        )
+    with path.open(encoding="utf-8") as handle:
         return json.load(handle)
 
 

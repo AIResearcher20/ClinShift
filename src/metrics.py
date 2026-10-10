@@ -36,7 +36,7 @@ def expected_calibration_error(
     y_true = np.asarray(y_true, dtype=float)
     y_prob = np.asarray(y_prob, dtype=float)
 
-    if not 0.0 <= y_prob.min() and y_prob.max() <= 1.0:
+    if y_prob.min() < 0.0 or y_prob.max() > 1.0:
         raise ValueError("Predicted probabilities must lie in [0, 1].")
 
     bin_edges = np.linspace(0.0, 1.0, n_bins + 1)

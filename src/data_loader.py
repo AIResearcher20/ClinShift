@@ -47,7 +47,6 @@ SHARED_FEATURES = [
     "sex",
     "cp",
     "trestbps",
-    "chol",
     "fbs",
     "restecg",
     "thalach",
@@ -160,10 +159,3 @@ if __name__ == "__main__":
     print("\nSite summary:")
     print(site_summary(data).to_string())
 
-    print("\nCholesterol summary by site:")
-    print(
-        data.groupby("site")["chol"]
-        .agg(["count", "mean", "std", "min", "median", "max"])
-        .round(2)
-        .to_string()
-    )

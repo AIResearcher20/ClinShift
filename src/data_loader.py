@@ -2,12 +2,13 @@
 
 The dataset consists of patient records from four sites. Feature
 encoding and missingness differ across sites. This module loads each
-site from the original UCI source and applies a documented set of
-harmonization rules so that downstream analysis operates on a single
-consistent representation.
+site from a local copy when available, and falls back to the UCI
+repository otherwise. Harmonization rules are documented so that
+downstream analysis operates on a single consistent representation.
 """
 
 from io import StringIO
+from pathlib import Path
 from urllib.request import urlopen
 
 import numpy as np
@@ -27,11 +28,19 @@ SITES = {
     "va": "processed.va.data",
 }
 
-BASE_URL = "https://archive.ics.uci.edu/static/public/45/heart+disease/"
+RAW_DIR = Path("data/raw")
 
-# Features retained for cross-site analysis. Columns that are almost
-# entirely missing at one or more sites (ca, thal) are excluded to
-# avoid imputation dominating the signal.
+# Fallback mirrors. Each URL must return the same processed format as
+# the original UCI distribution. The first working URL is used.
+FALLBACK_URLS = {
+    "processed.cleveland.data": [
+        "https://archive.ics.uci.edu/static/public/45/data.csv",
+    ],
+    "processed.hungarian.data": [],
+    "processed.switzerland.data": [],
+    "processed.va.data": [],
+}
+
 SHARED_FEATURES = [
     "age", "sex", "cp", "trestbps", "chol",
     "fbs", "restecg", "thalach", "exang",
@@ -41,10 +50,31 @@ SHARED_FEATURES = [
 CATEGORICAL_FEATURES = ["sex", "cp", "fbs", "restecg", "exang", "slope"]
 
 
+def _read_local(filename: str) -> str | None:
+    path = RAW_DIR / filename
+    if path.exists():
+        return path.read_text()
+    return None
+
+
+def _read_remote(filename: str) -> str:
+    for url in FALLBACK_URLS.get(filename, []):
+        try:
+            with urlopen(url, timeout=60) as response:
+                return response.read().decode("utf-8")
+        except Exception:
+            continue
+    raise FileNotFoundError(
+        f"No local copy of {filename} and no working remote mirror. "
+        f"Place the file under {RAW_DIR}/ before running."
+    )
+
+
 def _download(filename: str) -> str:
-    url = BASE_URL + filename
-    with urlopen(url, timeout=60) as response:
-        return response.read().decode("utf-8")
+    local = _read_local(filename)
+    if local is not None:
+        return local
+    return _read_remote(filename)
 
 
 def load_site(name: str, filename: str) -> pd.DataFrame:

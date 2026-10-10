@@ -41,6 +41,9 @@ jobs:
       - name: Run shift analysis
         run: python -m experiments.run_shift_analysis
 
+      - name: Run concept shift analysis
+        run: python -m experiments.run_concept_shift
+
       - name: Run shift detection analysis
         run: python -m experiments.run_detection_analysis
 

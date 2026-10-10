@@ -109,3 +109,35 @@ come from slightly different models. This discrepancy is expected to
 be small relative to the site-level differences that the indicators
 are designed to measure, and it is documented here so that the
 distinction is not lost.
+
+## Descriptive analysis of concept divergence
+
+Coefficient vectors of logistic regression models fitted
+independently at each site, on a shared feature space defined by a
+preprocessor fitted on Cleveland, have pairwise Euclidean distances
+between 1.78 and 2.47. The mean absolute difference between the
+predictions of these models on the Cleveland evaluation set ranges
+from 0.11 to 0.37. The two measures agree on which pairs of sites are
+most divergent.
+
+Switzerland appears in all three of the largest pairwise distances in
+both measures. The sign of the coefficient for sex reverses at
+Switzerland relative to the other three sites. This reversal is
+consistent with the site's positive rate of 93.5%, which changes the
+interpretation of sex as a predictor in the sample.
+
+For the three pairs of the form (Cleveland, target), prediction
+divergence aligns with the change in ECE observed in the transfer
+experiments: Hungary has the smallest divergence and the smallest
+change in calibration, Switzerland has the largest of both, and VA
+falls in between.
+
+These measures are descriptive. They do not establish that concept
+shift is the cause of calibration degradation, and they do not
+separate concept shift from covariate shift. With three target sites,
+no inferential claim is made. The measures are reported alongside the
+covariate shift analysis so that the two views can be read together.
+
+
+
+

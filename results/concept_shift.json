@@ -1,19 +1,67 @@
 {
   "source_site": "cleveland",
   "coefficient_distance": [
-    2.3849,
-    2.4654,
-    1.972,
-    2.3433,
-    1.7804,
-    2.2477
+    {
+      "site_a": "cleveland",
+      "site_b": "hungary",
+      "coefficient_distance": 2.384866763385769
+    },
+    {
+      "site_a": "cleveland",
+      "site_b": "switzerland",
+      "coefficient_distance": 2.465356099741072
+    },
+    {
+      "site_a": "cleveland",
+      "site_b": "va",
+      "coefficient_distance": 1.9719596538743043
+    },
+    {
+      "site_a": "hungary",
+      "site_b": "switzerland",
+      "coefficient_distance": 2.3433176719832294
+    },
+    {
+      "site_a": "hungary",
+      "site_b": "va",
+      "coefficient_distance": 1.7803585035860576
+    },
+    {
+      "site_a": "switzerland",
+      "site_b": "va",
+      "coefficient_distance": 2.247749827535488
+    }
   ],
   "prediction_divergence": [
-    0.1126,
-    0.3683,
-    0.1586,
-    0.3718,
-    0.1403,
-    0.3054
+    {
+      "site_a": "cleveland",
+      "site_b": "hungary",
+      "mean_absolute_prediction_difference": 0.11262586471714885
+    },
+    {
+      "site_a": "cleveland",
+      "site_b": "switzerland",
+      "mean_absolute_prediction_difference": 0.36830451407625786
+    },
+    {
+      "site_a": "cleveland",
+      "site_b": "va",
+      "mean_absolute_prediction_difference": 0.15863125619962964
+    },
+    {
+      "site_a": "hungary",
+      "site_b": "switzerland",
+      "mean_absolute_prediction_difference": 0.37183273340870115
+    },
+    {
+      "site_a": "hungary",
+      "site_b": "va",
+      "mean_absolute_prediction_difference": 0.1403260004691715
+    },
+    {
+      "site_a": "switzerland",
+      "site_b": "va",
+      "mean_absolute_prediction_difference": 0.3053830471397666
+    }
   ]
 }

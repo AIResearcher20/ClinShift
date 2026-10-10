@@ -4,64 +4,64 @@
     {
       "site_a": "cleveland",
       "site_b": "hungary",
-      "coefficient_distance": 2.3848667633857725
+      "coefficient_distance": 2.384866763385769
     },
     {
       "site_a": "cleveland",
       "site_b": "switzerland",
-      "coefficient_distance": 2.465356099741077
+      "coefficient_distance": 2.465356099741072
     },
     {
       "site_a": "cleveland",
       "site_b": "va",
-      "coefficient_distance": 1.9719596538743391
+      "coefficient_distance": 1.9719596538743043
     },
     {
       "site_a": "hungary",
       "site_b": "switzerland",
-      "coefficient_distance": 2.3433176719832236
+      "coefficient_distance": 2.3433176719832294
     },
     {
       "site_a": "hungary",
       "site_b": "va",
-      "coefficient_distance": 1.780358503585976
+      "coefficient_distance": 1.7803585035860576
     },
     {
       "site_a": "switzerland",
       "site_b": "va",
-      "coefficient_distance": 2.247749827535421
+      "coefficient_distance": 2.247749827535488
     }
   ],
   "prediction_divergence": [
     {
       "site_a": "cleveland",
       "site_b": "hungary",
-      "mean_absolute_prediction_difference": 0.11262586471714833
+      "mean_absolute_prediction_difference": 0.11262586471714885
     },
     {
       "site_a": "cleveland",
       "site_b": "switzerland",
-      "mean_absolute_prediction_difference": 0.3683045140762575
+      "mean_absolute_prediction_difference": 0.36830451407625786
     },
     {
       "site_a": "cleveland",
       "site_b": "va",
-      "mean_absolute_prediction_difference": 0.15863125619962903
+      "mean_absolute_prediction_difference": 0.15863125619962964
     },
     {
       "site_a": "hungary",
       "site_b": "switzerland",
-      "mean_absolute_prediction_difference": 0.3718327334087005
+      "mean_absolute_prediction_difference": 0.37183273340870115
     },
     {
       "site_a": "hungary",
       "site_b": "va",
-      "mean_absolute_prediction_difference": 0.14032600046917046
+      "mean_absolute_prediction_difference": 0.1403260004691715
     },
     {
       "site_a": "switzerland",
       "site_b": "va",
-      "mean_absolute_prediction_difference": 0.3053830471397613
+      "mean_absolute_prediction_difference": 0.3053830471397666
     }
   ]
 }

@@ -17,22 +17,31 @@ from sklearn.preprocessing import StandardScaler
 from src.data_loader import CATEGORICAL_FEATURES, SHARED_FEATURES
 
 
-def _encode(frame: pd.DataFrame) -> np.ndarray:
-    """Return a numeric matrix for distance computations.
+def _encode_pair(
+    source: pd.DataFrame,
+    target: pd.DataFrame,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Encode source and target with a shared feature space.
 
-    Categorical features are one-hot encoded. Missing values are
-    replaced by the column median for numeric features and by zero for
-    categorical features, which matches the preprocessing applied in
-    the modeling pipeline.
+    Categorical features are one-hot encoded using the union of
+    categories present in both frames, so that the two encoded matrices
+    have matching columns. Numeric features are standardized with
+    statistics computed on the combined data.
     """
     numeric = [
         column for column in SHARED_FEATURES
         if column not in CATEGORICAL_FEATURES
     ]
+
+    combined = pd.concat(
+        [source[SHARED_FEATURES], target[SHARED_FEATURES]],
+        ignore_index=True,
+    )
+
     parts = []
 
-    numeric_block = frame[numeric].to_numpy(dtype=float)
-    if numeric_block.size:
+    if numeric:
+        numeric_block = combined[numeric].to_numpy(dtype=float)
         median = np.nanmedian(numeric_block, axis=0)
         median = np.where(np.isnan(median), 0.0, median)
         mask = np.isnan(numeric_block)
@@ -40,7 +49,7 @@ def _encode(frame: pd.DataFrame) -> np.ndarray:
         parts.append(numeric_block)
 
     for column in CATEGORICAL_FEATURES:
-        values = frame[column].astype("float").fillna(-1).to_numpy()
+        values = combined[column].astype("float").fillna(-1).to_numpy()
         categories = np.unique(values)
         one_hot = np.zeros((len(values), len(categories)))
         for idx, category in enumerate(categories):
@@ -48,7 +57,11 @@ def _encode(frame: pd.DataFrame) -> np.ndarray:
         parts.append(one_hot)
 
     matrix = np.hstack(parts)
-    return StandardScaler().fit_transform(matrix)
+    scaler = StandardScaler()
+    matrix = scaler.fit_transform(matrix)
+
+    n_source = len(source)
+    return matrix[:n_source], matrix[n_source:]
 
 
 def density_ratio_auroc(
@@ -62,8 +75,7 @@ def density_ratio_auroc(
     indistinguishable. A value near 1.0 indicates they are separable,
     which implies substantial covariate shift.
     """
-    x_source = _encode(source)
-    x_target = _encode(target)
+    x_source, x_target = _encode_pair(source, target)
 
     x = np.vstack([x_source, x_target])
     y = np.concatenate([
@@ -96,8 +108,7 @@ def mmd_rbf(
     """
     rng = np.random.default_rng(seed)
 
-    x = _encode(source)
-    y = _encode(target)
+    x, y = _encode_pair(source, target)
 
     if len(x) > max_samples:
         idx = rng.choice(len(x), max_samples, replace=False)
@@ -135,8 +146,7 @@ def energy_distance(
     """Energy distance between two empirical distributions."""
     rng = np.random.default_rng(seed)
 
-    x = _encode(source)
-    y = _encode(target)
+    x, y = _encode_pair(source, target)
 
     if len(x) > max_samples:
         idx = rng.choice(len(x), max_samples, replace=False)

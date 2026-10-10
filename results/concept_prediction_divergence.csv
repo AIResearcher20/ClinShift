@@ -1,7 +1,7 @@
 site_a,site_b,mean_absolute_prediction_difference
-cleveland,hungary,0.11262586471714885
-cleveland,switzerland,0.36830451407625786
-cleveland,va,0.15863125619962964
-hungary,switzerland,0.37183273340870115
-hungary,va,0.1403260004691715
-switzerland,va,0.3053830471397666
+cleveland,hungary,0.11262586471714833
+cleveland,switzerland,0.3683045140762575
+cleveland,va,0.15863125619962903
+hungary,switzerland,0.3718327334087005
+hungary,va,0.14032600046917046
+switzerland,va,0.3053830471397613

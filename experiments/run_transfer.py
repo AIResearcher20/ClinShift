@@ -1,16 +1,14 @@
 """Cross-site transfer experiment.
 
 A model is trained on the Cleveland site and evaluated on each of the
-three remaining sites. For every target site, we report discrimination
-and calibration before and after post-hoc calibration. Calibrators are
-fitted on a held-out portion of the source site, never on the target.
+three remaining sites. Calibration is fitted using a held-out subset
+of the source site, without using labels from the target site.
 """
 
 import json
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from src.calibration import apply_calibrators
@@ -28,10 +26,13 @@ RESULTS_DIR = Path("results")
 
 
 def split_source(frame, test_size: float, seed: int):
-    features = frame[SHARED_FEATURES].to_numpy()
+    """Split the source site's data into training and calibration sets."""
+    features = frame[SHARED_FEATURES]
     target = frame["target"].to_numpy()
+
     return train_test_split(
-        features, target,
+        features,
+        target,
         test_size=test_size,
         stratify=target,
         random_state=seed,
@@ -39,52 +40,79 @@ def split_source(frame, test_size: float, seed: int):
 
 
 def evaluate(spec, source_frame, target_frame) -> dict:
+    """Evaluate a source-trained model on an independent target site."""
     x_train, x_cal, y_train, y_cal = split_source(
-        source_frame, test_size=0.3, seed=SEED
+        source_frame,
+        test_size=0.3,
+        seed=SEED,
     )
+
     pipeline = build_pipeline(spec)
     pipeline.fit(x_train, y_train)
 
     prob_cal = pipeline.predict_proba(x_cal)[:, 1]
-    prob_target = pipeline.predict_proba(
-        target_frame[SHARED_FEATURES].to_numpy()
-    )[:, 1]
+
+    x_target = target_frame[SHARED_FEATURES]
+    prob_target = pipeline.predict_proba(x_target)[:, 1]
     y_target = target_frame["target"].to_numpy()
 
-    raw = summarize(y_target, prob_target)
-    calibrated = apply_calibrators(prob_cal, y_cal, prob_target)
+    results = {
+        "raw": summarize(y_target, prob_target),
+    }
 
-    output = {"raw": raw}
-    for method, prob in calibrated.items():
-        output[method] = summarize(y_target, prob)
-    return output
+    calibrated = apply_calibrators(
+        prob_cal,
+        y_cal,
+        prob_target,
+    )
+
+    for method, probabilities in calibrated.items():
+        results[method] = summarize(y_target, probabilities)
+
+    return results
 
 
 def main() -> None:
     data = load_all()
     source_frame = data[data["site"] == SOURCE_SITE]
 
-    specs = [logistic_regression(SEED), gradient_boosting(SEED)]
+    if source_frame.empty:
+        raise ValueError(
+            f"No observations found for source site: {SOURCE_SITE}"
+        )
+
+    specs = [
+        logistic_regression(SEED),
+        gradient_boosting(SEED),
+    ]
+
     results = {}
 
     for spec in specs:
         results[spec.name] = {}
+
         for site, group in data.groupby("site"):
             if site == SOURCE_SITE:
                 continue
+
             metrics = evaluate(spec, source_frame, group)
             results[spec.name][site] = metrics
+
             print(f"\n{spec.name} -> {site}")
+
             for method, values in metrics.items():
                 print(f"  {method}")
+
                 for key, value in values.items():
                     print(f"    {key:<8} {value:.4f}")
 
-    RESULTS_DIR.mkdir(exist_ok=True)
-    out = RESULTS_DIR / "transfer.json"
-    with open(out, "w") as handle:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = RESULTS_DIR / "transfer.json"
+
+    with output_path.open("w", encoding="utf-8") as handle:
         json.dump(results, handle, indent=2)
-    print(f"\nSaved to {out}")
+
+    print(f"\nSaved to {output_path}")
 
 
 if __name__ == "__main__":

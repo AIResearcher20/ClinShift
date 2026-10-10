@@ -26,6 +26,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
       - name: Inspect cholesterol distribution
         run: python -m scripts.inspect_chol
 
@@ -37,9 +40,6 @@ jobs:
 
       - name: Run shift analysis
         run: python -m experiments.run_shift_analysis
-
-      - name: Generate figures
-        run: python -m scripts.generate_figures
 
       - name: Upload results as artifact
         uses: actions/upload-artifact@v4

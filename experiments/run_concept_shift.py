@@ -2,8 +2,9 @@
 
 For each site, fit a logistic regression on a feature space defined by
 a preprocessor fitted once on the source site. Report the distance
-between coefficient vectors and the mean absolute difference between
-predictions on the source evaluation set.
+between coefficient vectors, the mean absolute difference between
+predictions on the source evaluation set, and the full coefficient
+table.
 
 The measures are descriptive. They do not isolate concept divergence
 from sample size, class balance, or measurement variation. The results
@@ -25,6 +26,18 @@ from src.data_loader import load_all
 SEED = 42
 SOURCE_SITE = "cleveland"
 RESULTS_DIR = Path("results")
+
+
+def rows_to_records(frame, value_column: str) -> list:
+    """Convert a pairwise table into a list of labeled records."""
+    return [
+        {
+            "site_a": row.site_a,
+            "site_b": row.site_b,
+            value_column: getattr(row, value_column),
+        }
+        for row in frame.itertuples(index=False)
+    ]
 
 
 def main() -> None:
@@ -53,12 +66,12 @@ def main() -> None:
 
     summary = {
         "source_site": SOURCE_SITE,
-        "coefficient_distance": distances[
-            "coefficient_distance"
-        ].round(4).tolist(),
-        "prediction_divergence": divergence[
-            "mean_absolute_prediction_difference"
-        ].round(4).tolist(),
+        "coefficient_distance": rows_to_records(
+            distances, "coefficient_distance"
+        ),
+        "prediction_divergence": rows_to_records(
+            divergence, "mean_absolute_prediction_difference"
+        ),
     }
     with (RESULTS_DIR / "concept_shift.json").open(
         "w", encoding="utf-8"

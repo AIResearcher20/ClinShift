@@ -1,77 +1,169 @@
-"""Loading and harmonization of the UCI Heart Disease dataset.
+"""Load and harmonize the original UCI Heart Disease datasets.
 
-The dataset consists of patient records from four sites. Feature
-encoding and missingness differ across sites. This module loads a
-single combined CSV file and applies a documented set of harmonization
-rules so that downstream analysis operates on a single consistent
-representation.
-
-The cholesterol feature is excluded from the shared feature set. The
-standardized mean difference for cholesterol between Cleveland and
-Switzerland is 6.74 with a Kolmogorov-Smirnov statistic of 1.0,
-indicating no overlap between the two distributions. This is most
-likely a unit or recording discrepancy rather than a genuine
-physiological difference. See docs/decisions.md for details.
+The four sites are downloaded directly from the UCI machine learning
+repository. This avoids any preprocessing or unit conversion that may
+have been applied in redistributions of the dataset. Site-level
+differences in feature encoding and missingness are preserved so that
+they can be analyzed rather than silently removed.
 """
 
-from pathlib import Path
+from io import BytesIO
+from urllib.request import Request, urlopen
+from zipfile import ZipFile
 
 import pandas as pd
 
 
-RAW_PATH = Path("data/raw/heart_disease_uci.csv")
+ARCHIVE_URL = (
+    "https://archive.ics.uci.edu/static/public/45/heart+disease.zip"
+)
 
-SITE_COLUMN = "dataset"
-TARGET_COLUMN = "num"
+FILES = {
+    "cleveland": "processed.cleveland.data",
+    "hungary": "processed.hungarian.data",
+    "switzerland": "processed.switzerland.data",
+    "va": "processed.va.data",
+}
 
-SHARED_FEATURES = [
-    "age", "sex", "cp", "trestbps",
-    "fbs", "restecg", "thalach", "exang",
-    "oldpeak", "slope",
+COLUMNS = [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal",
+    "num",
 ]
 
-CATEGORICAL_FEATURES = ["sex", "cp", "fbs", "restecg", "exang", "slope"]
+SHARED_FEATURES = [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+]
 
-COLUMN_RENAMES = {
-    "thalch": "thalach",
-}
+CATEGORICAL_FEATURES = [
+    "sex",
+    "cp",
+    "fbs",
+    "restecg",
+    "exang",
+    "slope",
+]
 
 
 def load_all() -> pd.DataFrame:
-    """Load the combined CSV and return a harmonized frame."""
-    if not RAW_PATH.exists():
-        raise FileNotFoundError(
-            f"Expected dataset at {RAW_PATH}. Download the UCI Heart "
-            f"Disease dataset from Kaggle and place it there."
-        )
+    """Download the UCI archive and return a harmonized frame."""
 
-    frame = pd.read_csv(RAW_PATH)
-    frame = frame.rename(columns=COLUMN_RENAMES)
-    frame["site"] = frame[SITE_COLUMN].astype(str).str.lower()
-    frame["target"] = (frame[TARGET_COLUMN] > 0).astype(int)
+    request = Request(
+        ARCHIVE_URL,
+        headers={"User-Agent": "ClinShift research project"},
+    )
+
+    with urlopen(request, timeout=60) as response:
+        archive_data = response.read()
+
+    frames = []
+
+    with ZipFile(BytesIO(archive_data)) as archive:
+        archive_names = archive.namelist()
+
+        for site, filename in FILES.items():
+            matches = [
+                name
+                for name in archive_names
+                if name.endswith(filename)
+            ]
+
+            if not matches:
+                raise FileNotFoundError(
+                    f"Could not find {filename} in the UCI archive."
+                )
+
+            with archive.open(matches[0]) as file:
+                frame = pd.read_csv(
+                    file,
+                    header=None,
+                    names=COLUMNS,
+                    na_values=["?", ""],
+                    skipinitialspace=True,
+                )
+
+            frame["site"] = site
+            frames.append(frame)
+
+    data = pd.concat(frames, ignore_index=True)
+
+    # Coerce every original column to numeric. Non-numeric entries
+    # become NaN and are handled downstream by the imputation pipeline.
+    for column in COLUMNS:
+        data[column] = pd.to_numeric(data[column], errors="coerce")
+
+    # Records without a usable outcome cannot be used for supervised
+    # evaluation and are dropped.
+    data = data.dropna(subset=["num"]).copy()
+
+    # The original outcome ranges from 0 to 4, where 0 indicates absence
+    # of disease and values above 0 indicate presence.
+    data["target"] = (data["num"] > 0).astype(int)
 
     for column in CATEGORICAL_FEATURES:
-        if column in frame.columns:
-            frame[column] = frame[column].astype("Int64")
+        data[column] = data[column].astype("Int64")
 
-    return frame
+    return data.reset_index(drop=True)
 
 
 def site_summary(frame: pd.DataFrame) -> pd.DataFrame:
-    """Report per-site sample size and missingness on shared features."""
+    """Summarize sample sizes, missingness, and outcome rates by site."""
+
     rows = []
+
     for site, group in frame.groupby("site"):
-        row = {"site": site, "n": len(group)}
+        row = {
+            "site": site,
+            "n": len(group),
+        }
+
         for column in SHARED_FEATURES:
-            if column in group.columns:
-                row[f"{column}_missing_pct"] = round(
-                    group[column].isna().mean() * 100, 1
-                )
+            row[f"{column}_missing_pct"] = round(
+                group[column].isna().mean() * 100,
+                1,
+            )
+
         row["target_rate"] = round(group["target"].mean(), 3)
         rows.append(row)
+
     return pd.DataFrame(rows).set_index("site")
 
 
 if __name__ == "__main__":
     data = load_all()
+
+    print("Dataset loaded successfully.")
+    print(f"Total records: {len(data)}")
+    print(f"Total features: {len(SHARED_FEATURES)}")
+
+    print("\nSite summary:")
     print(site_summary(data).to_string())
+
+    print("\nCholesterol summary by site:")
+    print(
+        data.groupby("site")["chol"]
+        .agg(["count", "mean", "std", "min", "median", "max"])
+        .round(2)
+        .to_string()
+    )

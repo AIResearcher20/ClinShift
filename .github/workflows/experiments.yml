@@ -5,26 +5,52 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Baseline
+
+      - name: Inspect cholesterol distribution
+        run: python -m scripts.inspect_chol
+
+      - name: Run baseline experiment
         run: python -m experiments.run_baseline
-      - name: Transfer
+
+      - name: Run transfer experiment
         run: python -m experiments.run_transfer
-      - name: Shift analysis
+
+      - name: Run shift analysis
         run: python -m experiments.run_shift_analysis
-      - name: Upload results
+
+      - name: Generate figures
+        run: python -m scripts.generate_figures
+
+      - name: Upload results as artifact
         uses: actions/upload-artifact@v4
         with:
           name: results
           path: results/
+
+      - name: Commit results back to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/
+          git diff --staged --quiet || git commit -m "Update experiment results"
+          git push

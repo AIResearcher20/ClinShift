@@ -3,13 +3,12 @@
 Two model families are considered: a linear model with L2 penalty and
 a gradient-boosted tree ensemble. The linear model serves as a
 transparent baseline; the ensemble captures nonlinearities at the cost
-of interpretability. Both are wrapped in a small pipeline that handles
+of interpretability. Both are wrapped in a pipeline that handles
 categorical and numerical features consistently.
 """
 
 from dataclasses import dataclass, field
 
-import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.impute import SimpleImputer
@@ -26,7 +25,14 @@ NUMERIC_FEATURES = [
 ]
 
 
-def _preprocessor() -> ColumnTransformer:
+def preprocessor() -> ColumnTransformer:
+    """Return a fresh, unfitted column transformer.
+
+    Numeric features are imputed with the column median and
+    standardized. Categorical features are imputed with the most
+    frequent value and one-hot encoded. The transformer must be fitted
+    on the source site before being applied elsewhere.
+    """
     numeric = Pipeline([
         ("impute", SimpleImputer(strategy="median")),
         ("scale", StandardScaler()),
@@ -41,6 +47,11 @@ def _preprocessor() -> ColumnTransformer:
     ])
 
 
+# Retained for backward compatibility with earlier scripts that
+# import the underscore-prefixed name.
+_preprocessor = preprocessor
+
+
 @dataclass
 class ModelSpec:
     name: str
@@ -52,7 +63,6 @@ def logistic_regression(seed: int = 0) -> ModelSpec:
     return ModelSpec(
         name="logreg",
         estimator=LogisticRegression(
-            penalty="l2",
             C=1.0,
             max_iter=1000,
             random_state=seed,
@@ -74,6 +84,6 @@ def gradient_boosting(seed: int = 0) -> ModelSpec:
 
 def build_pipeline(spec: ModelSpec) -> Pipeline:
     return Pipeline([
-        ("preprocess", _preprocessor()),
+        ("preprocess", preprocessor()),
         ("model", spec.estimator),
     ])

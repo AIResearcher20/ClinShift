@@ -1,4 +1,3 @@
-چ```markdown
 # ClinShift
 
 Robustness and calibration of clinical prediction models under
